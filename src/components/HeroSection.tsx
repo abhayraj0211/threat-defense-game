@@ -17,7 +17,7 @@ export const HeroSection = () => {
       <div className="container relative z-10 max-w-6xl mx-auto text-center">
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-8 animate-fade-in">
           <Shield className="w-4 h-4 text-primary" />
-          <span className="text-sm font-medium text-primary">Advanced Phishing Detection Platform</span>
+          <span className="text-sm font-medium text-primary">Phishing Detection & Prevention Platform</span>
         </div>
         
         <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-fade-in" style={{ animationDelay: '0.1s' }}>
@@ -27,7 +27,7 @@ export const HeroSection = () => {
         </h1>
         
         <p className="text-xl md:text-2xl text-muted-foreground mb-12 max-w-3xl mx-auto animate-fade-in" style={{ animationDelay: '0.2s' }}>
-          Learn to identify phishing attempts, understand preventive measures, and use AI-powered detection to protect yourself and your organization
+          Learn to identify phishing attempts, understand preventive measures, and use our detection tool to protect yourself and your organization
         </p>
         
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-fade-in" style={{ animationDelay: '0.3s' }}>
@@ -38,7 +38,7 @@ export const HeroSection = () => {
             className="text-lg px-8"
           >
             <Shield className="w-5 h-5" />
-            Try AI Detector
+            Try Phishing Detector
           </Button>
           <Button 
             variant="outline" 
@@ -63,7 +63,7 @@ export const HeroSection = () => {
           </div>
           <div className="p-6 rounded-lg bg-card/50 backdrop-blur border border-border">
             <div className="text-4xl font-bold text-success mb-2">99.9%</div>
-            <div className="text-sm text-muted-foreground">Detection accuracy with AI</div>
+            <div className="text-sm text-muted-foreground">Detection accuracy rate</div>
           </div>
         </div>
       </div>

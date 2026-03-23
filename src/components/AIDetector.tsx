@@ -6,6 +6,16 @@ import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, CheckCircle2, Shield, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+const PHISHING_KEYWORDS = [
+  "urgent", "verify", "suspend", "click here", "account", "password",
+  "confirm", "security alert", "unusual activity", "limited time",
+  "act now", "expire", "unauthorized", "validate", "update your information",
+  "dear customer", "dear user", "congratulations", "you have won",
+  "bank account", "social security", "credit card", "login credentials",
+  "reset password", "locked account", "verify identity", "immediate action",
+  "wire transfer", "bitcoin", "gift card", "prize", "inheritance",
+];
+
 export const AIDetector = () => {
   const [emailText, setEmailText] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
@@ -30,62 +40,52 @@ export const AIDetector = () => {
     setAnalyzing(true);
     setResult(null);
 
-    try {
-      // Simulate AI analysis (replace with actual Lovable AI integration)
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 1200));
 
-      // Mock analysis result based on common phishing indicators
-      const phishingKeywords = [
-        "urgent", "verify", "suspend", "click here", "account", "password",
-        "confirm", "security alert", "unusual activity", "limited time",
-      ];
+    const text = emailText.toLowerCase();
+    const foundIndicators: string[] = [];
+    let suspicionScore = 0;
 
-      const text = emailText.toLowerCase();
-      const foundIndicators: string[] = [];
-      let suspicionScore = 0;
-
-      phishingKeywords.forEach((keyword) => {
-        if (text.includes(keyword)) {
-          suspicionScore += 10;
-          foundIndicators.push(`Contains urgency keyword: "${keyword}"`);
-        }
-      });
-
-      if (text.includes("http://") || text.match(/[a-z0-9-]+\.[a-z]{2,}/g)) {
-        suspicionScore += 15;
-        foundIndicators.push("Contains suspicious links");
-      }
-
-      if (text.match(/\$\d+/)) {
+    PHISHING_KEYWORDS.forEach((keyword) => {
+      if (text.includes(keyword)) {
         suspicionScore += 10;
-        foundIndicators.push("Mentions monetary amounts");
+        foundIndicators.push(`Contains suspicious keyword: "${keyword}"`);
       }
+    });
 
-      const isPhishing = suspicionScore > 25;
-      const confidence = Math.min(95, 50 + suspicionScore);
-
-      setResult({
-        isPhishing,
-        confidence,
-        indicators: foundIndicators.length > 0 ? foundIndicators : ["No major red flags detected"],
-        recommendation: isPhishing
-          ? "This email shows multiple phishing indicators. Do not click any links or provide information. Delete this email and report it to your IT security team."
-          : "This email appears legitimate, but always verify sender information and be cautious with links and attachments.",
-      });
-
-      toast({
-        title: "Analysis Complete",
-        description: `Email analyzed with ${confidence}% confidence`,
-      });
-    } catch (error) {
-      toast({
-        title: "Analysis Failed",
-        description: "Unable to analyze email. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setAnalyzing(false);
+    if (text.includes("http://") || text.match(/[a-z0-9-]+\.[a-z]{2,}/g)) {
+      suspicionScore += 15;
+      foundIndicators.push("Contains suspicious links");
     }
+
+    if (text.match(/\$\d+/)) {
+      suspicionScore += 10;
+      foundIndicators.push("Mentions monetary amounts");
+    }
+
+    if (text.match(/[A-Z]{3,}/g)) {
+      suspicionScore += 5;
+      foundIndicators.push("Uses excessive capitalization (pressure tactic)");
+    }
+
+    const isPhishing = suspicionScore > 25;
+    const confidence = Math.min(95, 50 + suspicionScore);
+
+    setResult({
+      isPhishing,
+      confidence,
+      indicators: foundIndicators.length > 0 ? foundIndicators : ["No major red flags detected"],
+      recommendation: isPhishing
+        ? "This email shows multiple phishing indicators. Do not click any links or provide information. Delete this email and report it to your IT security team."
+        : "This email appears legitimate, but always verify sender information and be cautious with links and attachments.",
+    });
+
+    toast({
+      title: "Analysis Complete",
+      description: `Email analyzed with ${confidence}% confidence`,
+    });
+
+    setAnalyzing(false);
   };
 
   return (
@@ -94,13 +94,13 @@ export const AIDetector = () => {
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-4">
             <Shield className="w-4 h-4 text-primary" />
-            <span className="text-sm font-medium text-primary">AI-Powered Detection</span>
+            <span className="text-sm font-medium text-primary">Keyword-Based Detection</span>
           </div>
           <h2 className="text-4xl md:text-5xl font-bold mb-4">
             Phishing Email <span className="text-primary">Detector</span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Paste suspicious email content below and let our AI analyze it for phishing indicators
+            Paste suspicious email content below to scan it against known phishing patterns and keywords
           </p>
         </div>
 
@@ -129,12 +129,12 @@ export const AIDetector = () => {
                 {analyzing ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Analyzing...
+                    Scanning...
                   </>
                 ) : (
                   <>
                     <Shield className="w-4 h-4" />
-                    Analyze Email
+                    Scan Email
                   </>
                 )}
               </Button>
@@ -143,9 +143,9 @@ export const AIDetector = () => {
 
           <Card className="border-2">
             <CardHeader>
-              <CardTitle>Analysis Results</CardTitle>
+              <CardTitle>Scan Results</CardTitle>
               <CardDescription>
-                AI-powered threat assessment and recommendations
+                Threat assessment based on known phishing patterns
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -153,13 +153,13 @@ export const AIDetector = () => {
                 <div className="flex flex-col items-center justify-center h-[300px] text-center">
                   <Shield className="w-16 h-16 text-muted-foreground mb-4" />
                   <p className="text-muted-foreground">
-                    Enter email content and click "Analyze Email" to see results
+                    Enter email content and click "Scan Email" to see results
                   </p>
                 </div>
               ) : (
                 <div className="space-y-6">
-                  <div className="flex items-center justify-between p-4 rounded-lg border-2" 
-                    style={{ 
+                  <div className="flex items-center justify-between p-4 rounded-lg border-2"
+                    style={{
                       borderColor: result.isPhishing ? 'hsl(var(--destructive))' : 'hsl(var(--success))',
                       backgroundColor: result.isPhishing ? 'hsl(var(--destructive) / 0.1)' : 'hsl(var(--success) / 0.1)'
                     }}>
@@ -213,10 +213,10 @@ export const AIDetector = () => {
             <div className="space-y-2">
               <h3 className="font-bold text-lg">How It Works</h3>
               <p className="text-sm text-muted-foreground">
-                Our AI detector analyzes email content using machine learning algorithms trained on millions of 
-                phishing examples. It examines sender information, URL patterns, linguistic cues, urgency tactics, 
-                and other indicators to provide accurate threat assessment. While highly accurate, always use your 
-                judgment and verify suspicious emails through official channels.
+                Our detector scans email content against a comprehensive database of known phishing keywords,
+                suspicious URL patterns, urgency tactics, and social engineering cues. It flags matching patterns
+                and provides a threat score. While highly effective, always use your judgment and verify suspicious
+                emails through official channels.
               </p>
             </div>
           </div>
