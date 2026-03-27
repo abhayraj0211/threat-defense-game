@@ -43,8 +43,6 @@ export const HeroSection = () => {
             <Shield className="w-5 h-5" />
             Try Phishing Detector
           </Button>
-            Try Phishing Detector
-          </Button>
           <Button 
             variant="outline" 
             size="lg"
