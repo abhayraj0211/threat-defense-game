@@ -1,7 +1,6 @@
 import { HeroSection } from "@/components/HeroSection";
 import { PhishingExamples } from "@/components/PhishingExamples";
 import { PreventionTips } from "@/components/PreventionTips";
-import { AIDetector } from "@/components/AIDetector";
 
 const Index = () => {
   return (
@@ -9,7 +8,6 @@ const Index = () => {
       <HeroSection />
       <PhishingExamples />
       <PreventionTips />
-      <AIDetector />
       
       <footer className="py-8 px-4 border-t border-border bg-card">
         <div className="container max-w-7xl mx-auto text-center">
