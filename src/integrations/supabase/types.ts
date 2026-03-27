@@ -14,7 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      phishing_scans: {
+        Row: {
+          confidence: number
+          created_at: string
+          email_content: string
+          id: string
+          indicators: string[]
+          is_phishing: boolean
+          recommendation: string | null
+        }
+        Insert: {
+          confidence: number
+          created_at?: string
+          email_content: string
+          id?: string
+          indicators?: string[]
+          is_phishing: boolean
+          recommendation?: string | null
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          email_content?: string
+          id?: string
+          indicators?: string[]
+          is_phishing?: boolean
+          recommendation?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
