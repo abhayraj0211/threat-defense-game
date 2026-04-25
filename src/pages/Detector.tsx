@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
   AlertTriangle, CheckCircle2, Shield, Loader2, ArrowLeft,
-  Clock, Mail, Search, Activity, Database, Eye
+  Clock, Mail, Search, Activity, Database, Eye, Sparkles
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,6 +26,9 @@ type ScanResult = {
   confidence: number;
   indicators: string[];
   recommendation: string;
+  riskLevel?: string;
+  summary?: string;
+  source: "ai" | "keyword";
 };
 
 type RecentScan = {
@@ -63,21 +66,7 @@ const Detector = () => {
     setLoadingRecents(false);
   };
 
-  const analyzeEmail = async () => {
-    if (!emailText.trim()) {
-      toast({
-        title: "Email content required",
-        description: "Paste the suspicious email text to analyze",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setAnalyzing(true);
-    setResult(null);
-
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
+  const runKeywordScan = (): ScanResult => {
     const text = emailText.toLowerCase();
     const foundIndicators: string[] = [];
     let suspicionScore = 0;
@@ -93,62 +82,112 @@ const Detector = () => {
       suspicionScore += 15;
       foundIndicators.push("Suspicious URL patterns found");
     }
-
     if (text.match(/\$\d+/)) {
       suspicionScore += 10;
       foundIndicators.push("Monetary value references detected");
     }
-
     if (text.match(/[A-Z]{3,}/g)) {
       suspicionScore += 5;
       foundIndicators.push("Excessive capitalization (urgency tactic)");
     }
-
     if (text.match(/!{2,}/)) {
       suspicionScore += 5;
       foundIndicators.push("Multiple exclamation marks (pressure tactic)");
     }
 
-    if (text.match(/@[a-z0-9.-]+\.[a-z]{2,}/g)) {
-      const emails = text.match(/@[a-z0-9.-]+\.[a-z]{2,}/g) || [];
-      const suspicious = emails.filter(e =>
-        e.includes("secure") || e.includes("support") || e.includes("admin") || e.includes("noreply")
-      );
-      if (suspicious.length > 0) {
-        suspicionScore += 10;
-        foundIndicators.push("Suspicious sender domain patterns");
-      }
-    }
-
     const isPhishing = suspicionScore > 25;
     const confidence = Math.min(98, 45 + suspicionScore);
 
-    const scanResult: ScanResult = {
+    return {
       isPhishing,
       confidence,
       indicators: foundIndicators.length > 0 ? foundIndicators : ["No major red flags detected"],
       recommendation: isPhishing
-        ? "⚠️ HIGH RISK: This email exhibits multiple phishing characteristics. Do NOT click any links, do NOT provide personal information. Delete immediately and report to your IT security team."
-        : "✅ LOW RISK: This email appears relatively safe. However, always verify sender identity and exercise caution with links and attachments.",
+        ? "⚠️ HIGH RISK: This email exhibits multiple phishing characteristics. Do NOT click any links or provide personal information."
+        : "✅ LOW RISK: This email appears relatively safe. Always verify sender identity and exercise caution.",
+      source: "keyword",
     };
+  };
+
+  const analyzeEmail = async () => {
+    if (!emailText.trim()) {
+      toast({
+        title: "Email content required",
+        description: "Paste the suspicious email text to analyze",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setAnalyzing(true);
+    setResult(null);
+
+    let scanResult: ScanResult;
+
+    try {
+      const { data, error } = await supabase.functions.invoke("analyze-email", {
+        body: { emailContent: emailText },
+      });
+
+      if (error) throw error;
+
+      if (data?.error) {
+        // Handle gateway-specific errors
+        if (data.error.includes("Rate limit")) {
+          toast({
+            title: "Rate limit reached",
+            description: "Falling back to keyword scan. Try AI again shortly.",
+            variant: "destructive",
+          });
+        } else if (data.error.includes("credits")) {
+          toast({
+            title: "AI credits exhausted",
+            description: "Falling back to keyword scan.",
+            variant: "destructive",
+          });
+        } else {
+          throw new Error(data.error);
+        }
+        scanResult = runKeywordScan();
+      } else {
+        scanResult = {
+          isPhishing: !!data.isPhishing,
+          confidence: Math.round(data.confidence ?? 0),
+          indicators: Array.isArray(data.indicators) && data.indicators.length > 0
+            ? data.indicators
+            : ["No specific indicators returned"],
+          recommendation: data.recommendation ?? "",
+          riskLevel: data.riskLevel,
+          summary: data.summary,
+          source: "ai",
+        };
+      }
+    } catch (err) {
+      console.error("AI analysis failed, using keyword fallback:", err);
+      toast({
+        title: "AI unavailable",
+        description: "Using keyword-based scan as fallback.",
+        variant: "destructive",
+      });
+      scanResult = runKeywordScan();
+    }
 
     setResult(scanResult);
 
     // Store in database
     await supabase.from("phishing_scans").insert({
       email_content: emailText.substring(0, 2000),
-      is_phishing: isPhishing,
-      confidence,
-      indicators: foundIndicators,
+      is_phishing: scanResult.isPhishing,
+      confidence: scanResult.confidence,
+      indicators: scanResult.indicators,
       recommendation: scanResult.recommendation,
     });
 
-    // Refresh recents
     fetchRecentScans();
 
     toast({
-      title: "Scan Complete",
-      description: `Threat level: ${isPhishing ? "HIGH" : "LOW"} (${confidence}% confidence)`,
+      title: `Scan Complete (${scanResult.source === "ai" ? "AI" : "Keyword"})`,
+      description: `Threat level: ${scanResult.isPhishing ? "HIGH" : "LOW"} (${scanResult.confidence}% confidence)`,
     });
 
     setAnalyzing(false);
@@ -243,7 +282,7 @@ const Detector = () => {
                   <CardTitle>Email Scanner</CardTitle>
                 </div>
                 <CardDescription>
-                  Paste complete email content including headers, subject line, and body
+                  Powered by GPT — paste complete email content (headers, subject, body) for in-depth analysis
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -341,6 +380,35 @@ const Detector = () => {
                         {result.isPhishing ? "HIGH RISK" : "LOW RISK"}
                       </Badge>
                     </div>
+
+                    {/* Engine + Risk Level */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="outline" className="gap-1">
+                        {result.source === "ai" ? (
+                          <>
+                            <Sparkles className="w-3 h-3 text-primary" />
+                            AI Analysis (GPT)
+                          </>
+                        ) : (
+                          <>
+                            <Search className="w-3 h-3" />
+                            Keyword Engine
+                          </>
+                        )}
+                      </Badge>
+                      {result.riskLevel && (
+                        <Badge variant="outline" className="uppercase">
+                          {result.riskLevel} risk
+                        </Badge>
+                      )}
+                    </div>
+
+                    {result.summary && (
+                      <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 text-sm">
+                        <span className="font-semibold">AI Summary: </span>
+                        {result.summary}
+                      </div>
+                    )}
 
                     {/* Confidence Bar */}
                     <div>
