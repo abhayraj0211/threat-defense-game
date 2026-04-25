@@ -211,7 +211,7 @@ const Forum = () => {
       return;
     }
     setSubmitting(true);
-    const { error } = await supabase.from("forum_posts").insert(parsed.data);
+    const { error } = await supabase.from("forum_posts").insert(parsed.data as any);
     setSubmitting(false);
     if (error) {
       toast({ title: "Could not post", description: error.message, variant: "destructive" });
@@ -466,7 +466,7 @@ const PostCard = ({
     setPosting(true);
     const { error } = await supabase
       .from("forum_comments")
-      .insert({ ...parsed.data, post_id: post.id });
+      .insert({ ...parsed.data, post_id: post.id } as any);
     setPosting(false);
     if (error) {
       toast({ title: "Could not comment", description: error.message, variant: "destructive" });
