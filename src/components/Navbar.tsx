@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Shield, Moon, Sun, Search, Home, BookOpen } from "lucide-react";
+import { Shield, Moon, Sun, Search, Home, BookOpen, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/ThemeProvider";
 import { cn } from "@/lib/utils";
@@ -11,6 +11,7 @@ export const Navbar = () => {
   const navItems = [
     { to: "/", label: "Home", icon: Home },
     { to: "/detector", label: "Detector", icon: Search },
+    { to: "/forum", label: "Forum", icon: MessageSquare },
     { to: "/#examples", label: "Examples", icon: BookOpen },
   ];
 
