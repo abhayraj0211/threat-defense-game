@@ -14,6 +14,68 @@ export type Database = {
   }
   public: {
     Tables: {
+      forum_comments: {
+        Row: {
+          author_name: string
+          content: string
+          created_at: string
+          id: string
+          post_id: string
+        }
+        Insert: {
+          author_name: string
+          content: string
+          created_at?: string
+          id?: string
+          post_id: string
+        }
+        Update: {
+          author_name?: string
+          content?: string
+          created_at?: string
+          id?: string
+          post_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "forum_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_posts: {
+        Row: {
+          author_name: string
+          category: string
+          content: string
+          created_at: string
+          id: string
+          language: string
+          title: string
+        }
+        Insert: {
+          author_name: string
+          category?: string
+          content: string
+          created_at?: string
+          id?: string
+          language?: string
+          title: string
+        }
+        Update: {
+          author_name?: string
+          category?: string
+          content?: string
+          created_at?: string
+          id?: string
+          language?: string
+          title?: string
+        }
+        Relationships: []
+      }
       phishing_scans: {
         Row: {
           confidence: number
