@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
   AlertTriangle, CheckCircle2, Shield, Loader2, ArrowLeft,
-  Clock, Mail, Search, Activity, Database, Eye
+  Clock, Mail, Search, Activity, Database, Eye, Sparkles
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
