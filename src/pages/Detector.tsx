@@ -26,6 +26,9 @@ type ScanResult = {
   confidence: number;
   indicators: string[];
   recommendation: string;
+  riskLevel?: string;
+  summary?: string;
+  source: "ai" | "keyword";
 };
 
 type RecentScan = {
