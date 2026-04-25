@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Navbar } from "@/components/Navbar";
 
 const PHISHING_KEYWORDS = [
   "urgent", "verify", "suspend", "click here", "account", "password",
@@ -195,20 +196,13 @@ const Detector = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card/80 backdrop-blur sticky top-0 z-50">
+      <Navbar />
+      {/* Page Header */}
+      <header className="border-b border-border bg-card/50">
         <div className="container max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link to="/">
-              <Button variant="ghost" size="sm">
-                <ArrowLeft className="w-4 h-4" />
-                Back
-              </Button>
-            </Link>
-            <div className="flex items-center gap-2">
-              <Shield className="w-6 h-6 text-primary" />
-              <h1 className="text-xl font-bold">Phishing Detector</h1>
-            </div>
+          <div className="flex items-center gap-2">
+            <Shield className="w-6 h-6 text-primary" />
+            <h1 className="text-xl font-bold">Phishing Detector</h1>
           </div>
           <Badge variant="outline" className="gap-1">
             <Database className="w-3 h-3" />
