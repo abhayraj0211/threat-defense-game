@@ -282,7 +282,7 @@ const Detector = () => {
                   <CardTitle>Email Scanner</CardTitle>
                 </div>
                 <CardDescription>
-                  Paste complete email content including headers, subject line, and body
+                  Powered by GPT — paste complete email content (headers, subject, body) for in-depth analysis
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
