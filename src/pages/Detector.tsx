@@ -381,6 +381,35 @@ const Detector = () => {
                       </Badge>
                     </div>
 
+                    {/* Engine + Risk Level */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="outline" className="gap-1">
+                        {result.source === "ai" ? (
+                          <>
+                            <Sparkles className="w-3 h-3 text-primary" />
+                            AI Analysis (GPT)
+                          </>
+                        ) : (
+                          <>
+                            <Search className="w-3 h-3" />
+                            Keyword Engine
+                          </>
+                        )}
+                      </Badge>
+                      {result.riskLevel && (
+                        <Badge variant="outline" className="uppercase">
+                          {result.riskLevel} risk
+                        </Badge>
+                      )}
+                    </div>
+
+                    {result.summary && (
+                      <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 text-sm">
+                        <span className="font-semibold">AI Summary: </span>
+                        {result.summary}
+                      </div>
+                    )}
+
                     {/* Confidence Bar */}
                     <div>
                       <div className="flex justify-between text-sm mb-2">
