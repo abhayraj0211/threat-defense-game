@@ -13,7 +13,7 @@ export const Navbar = () => {
     { to: "/", label: "Home", icon: Home },
     { to: "/detector", label: "Detector", icon: Search },
     { to: "/forum", label: "Forum", icon: MessageSquare },
-    { to: "/#examples", label: "Examples", icon: BookOpen },
+    { to: "/examples", label: "Examples", icon: BookOpen },
   ];
 
   return (
