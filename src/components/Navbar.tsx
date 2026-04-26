@@ -62,6 +62,17 @@ export const Navbar = () => {
             );
           })}
 
+          <button
+            onClick={goToContact}
+            className={cn(
+              "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+              "hover:bg-accent hover:text-accent-foreground text-muted-foreground",
+            )}
+          >
+            <Mail className="h-4 w-4" />
+            <span className="hidden sm:inline">Contact</span>
+          </button>
+
           <Button
             variant="ghost"
             size="icon"
