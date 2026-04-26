@@ -436,6 +436,59 @@ const PostCard = ({
   const [posting, setPosting] = useState(false);
   const { toast } = useToast();
 
+  // Per-post display language (defaults to UI language). Translates content on demand.
+  const [displayLang, setDisplayLang] = useState<Language>(lang);
+  const [translations_, setTranslations_] = useState<
+    Partial<Record<Language, { title: string; content: string }>>
+  >({});
+  const [translating, setTranslating] = useState(false);
+
+  // Whenever the global UI language changes, follow it for this post too.
+  useEffect(() => {
+    setDisplayLang(lang);
+  }, [lang]);
+
+  // When displayLang differs from the original post language and we
+  // haven't fetched a translation yet, fetch it.
+  useEffect(() => {
+    const needsTranslation =
+      displayLang !== (post.language as Language) && !translations_[displayLang];
+    if (!needsTranslation) return;
+
+    let cancelled = false;
+    const run = async () => {
+      setTranslating(true);
+      const { data, error } = await supabase.functions.invoke("translate-post", {
+        body: {
+          title: post.title,
+          content: post.content,
+          targetLanguage: displayLang,
+        },
+      });
+      if (cancelled) return;
+      setTranslating(false);
+      if (error || data?.error) {
+        toast({
+          title: "Translation failed",
+          description: data?.error ?? error?.message ?? "Try again later.",
+          variant: "destructive",
+        });
+        // Fall back to original language so the user sees something
+        setDisplayLang(post.language as Language);
+        return;
+      }
+      setTranslations_((prev) => ({
+        ...prev,
+        [displayLang]: { title: data.title, content: data.content },
+      }));
+    };
+    run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [displayLang, post, translations_, toast]);
+
   const loadComments = async () => {
     setLoadingComments(true);
     const { data } = await supabase
@@ -482,6 +535,12 @@ const PostCard = ({
     lang === "hi" ? "hi-IN" : "en-US",
     { dateStyle: "medium", timeStyle: "short" },
   );
+
+  // Decide what title/content to render
+  const isOriginal = displayLang === (post.language as Language);
+  const displayed = isOriginal
+    ? { title: post.title, content: post.content }
+    : translations_[displayLang] ?? { title: post.title, content: post.content };
 
   return (
     <Card className="border-2 hover:border-primary/30 transition-colors">
