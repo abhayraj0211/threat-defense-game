@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
-  AlertTriangle, CheckCircle2, Shield, Loader2, ArrowLeft,
-  Clock, Mail, Search, Activity, Database, Eye, Sparkles
+  AlertTriangle, CheckCircle2, Shield, Loader2,
+  Clock, Mail, Search, Activity, Database, Eye, Sparkles,
+  Brain, Zap, ScanLine, Layers,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +22,8 @@ const PHISHING_KEYWORDS = [
   "reset password", "locked account", "verify identity", "immediate action",
   "wire transfer", "bitcoin", "gift card", "prize", "inheritance",
 ];
+
+type DetectionMode = "ai" | "keyword";
 
 type ScanResult = {
   isPhishing: boolean;
@@ -43,6 +46,7 @@ type RecentScan = {
 
 const Detector = () => {
   const [emailText, setEmailText] = useState("");
+  const [mode, setMode] = useState<DetectionMode>("ai");
   const [analyzing, setAnalyzing] = useState(false);
   const [result, setResult] = useState<ScanResult | null>(null);
   const [recentScans, setRecentScans] = useState<RecentScan[]>([]);
@@ -110,6 +114,45 @@ const Detector = () => {
     };
   };
 
+  const runAIScan = async (): Promise<ScanResult> => {
+    const { data, error } = await supabase.functions.invoke("analyze-email", {
+      body: { emailContent: emailText },
+    });
+
+    if (error) throw error;
+
+    if (data?.error) {
+      if (data.error.includes("Rate limit")) {
+        toast({
+          title: "Rate limit reached",
+          description: "Falling back to keyword scan. Try AI again shortly.",
+          variant: "destructive",
+        });
+      } else if (data.error.includes("credits")) {
+        toast({
+          title: "AI credits exhausted",
+          description: "Falling back to keyword scan.",
+          variant: "destructive",
+        });
+      } else {
+        throw new Error(data.error);
+      }
+      return runKeywordScan();
+    }
+
+    return {
+      isPhishing: !!data.isPhishing,
+      confidence: Math.round(data.confidence ?? 0),
+      indicators: Array.isArray(data.indicators) && data.indicators.length > 0
+        ? data.indicators
+        : ["No specific indicators returned"],
+      recommendation: data.recommendation ?? "",
+      riskLevel: data.riskLevel,
+      summary: data.summary,
+      source: "ai",
+    };
+  };
+
   const analyzeEmail = async () => {
     if (!emailText.trim()) {
       toast({
@@ -126,42 +169,12 @@ const Detector = () => {
     let scanResult: ScanResult;
 
     try {
-      const { data, error } = await supabase.functions.invoke("analyze-email", {
-        body: { emailContent: emailText },
-      });
-
-      if (error) throw error;
-
-      if (data?.error) {
-        // Handle gateway-specific errors
-        if (data.error.includes("Rate limit")) {
-          toast({
-            title: "Rate limit reached",
-            description: "Falling back to keyword scan. Try AI again shortly.",
-            variant: "destructive",
-          });
-        } else if (data.error.includes("credits")) {
-          toast({
-            title: "AI credits exhausted",
-            description: "Falling back to keyword scan.",
-            variant: "destructive",
-          });
-        } else {
-          throw new Error(data.error);
-        }
-        scanResult = runKeywordScan();
+      if (mode === "ai") {
+        scanResult = await runAIScan();
       } else {
-        scanResult = {
-          isPhishing: !!data.isPhishing,
-          confidence: Math.round(data.confidence ?? 0),
-          indicators: Array.isArray(data.indicators) && data.indicators.length > 0
-            ? data.indicators
-            : ["No specific indicators returned"],
-          recommendation: data.recommendation ?? "",
-          riskLevel: data.riskLevel,
-          summary: data.summary,
-          source: "ai",
-        };
+        // Brief artificial delay so the UX feels intentional
+        await new Promise((r) => setTimeout(r, 400));
+        scanResult = runKeywordScan();
       }
     } catch (err) {
       console.error("AI analysis failed, using keyword fallback:", err);
@@ -175,7 +188,6 @@ const Detector = () => {
 
     setResult(scanResult);
 
-    // Store in database
     await supabase.from("phishing_scans").insert({
       email_content: emailText.substring(0, 2000),
       is_phishing: scanResult.isPhishing,
@@ -194,95 +206,157 @@ const Detector = () => {
     setAnalyzing(false);
   };
 
+  const stats = [
+    {
+      label: "Total Scans",
+      value: recentScans.length,
+      icon: ScanLine,
+      tone: "from-primary/20 to-primary/5",
+      iconColor: "text-primary",
+    },
+    {
+      label: "Threats Found",
+      value: recentScans.filter((s) => s.is_phishing).length,
+      icon: AlertTriangle,
+      tone: "from-destructive/20 to-destructive/5",
+      iconColor: "text-destructive",
+      valueClass: "text-destructive",
+    },
+    {
+      label: "Safe Emails",
+      value: recentScans.filter((s) => !s.is_phishing).length,
+      icon: CheckCircle2,
+      tone: "from-success/20 to-success/5",
+      iconColor: "text-success",
+      valueClass: "text-success",
+    },
+    {
+      label: "Active Keywords",
+      value: PHISHING_KEYWORDS.length,
+      icon: Activity,
+      tone: "from-warning/20 to-warning/5",
+      iconColor: "text-warning",
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      {/* Page Header */}
-      <header className="border-b border-border bg-card/50">
-        <div className="container max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Shield className="w-6 h-6 text-primary" />
-            <h1 className="text-xl font-bold">Phishing Detector</h1>
+
+      {/* Hero Header */}
+      <header className="relative overflow-hidden border-b border-border">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/15 via-background to-accent/10" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-primary/20 rounded-full blur-[120px] opacity-60" />
+        <div className="relative container max-w-7xl mx-auto px-4 py-12">
+          <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-6">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 mb-4">
+                <Shield className="w-3.5 h-3.5 text-primary" />
+                <span className="text-xs font-medium text-primary">Email Threat Analyzer</span>
+              </div>
+              <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-2">
+                Phishing{" "}
+                <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                  Detector
+                </span>
+              </h1>
+              <p className="text-muted-foreground max-w-xl">
+                Compare AI-powered analysis with classic keyword detection. Paste any suspicious email to see how each engine responds.
+              </p>
+            </div>
+            <Badge variant="outline" className="gap-1.5 px-3 py-1.5 backdrop-blur-sm">
+              <Database className="w-3.5 h-3.5" />
+              {recentScans.length} Scans Recorded
+            </Badge>
           </div>
-          <Badge variant="outline" className="gap-1">
-            <Database className="w-3 h-3" />
-            {recentScans.length} Scans Recorded
-          </Badge>
         </div>
       </header>
 
       <div className="container max-w-7xl mx-auto px-4 py-8">
         {/* Stats Bar */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <Card className="border border-border">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <Search className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold">{recentScans.length}</div>
-                <div className="text-xs text-muted-foreground">Total Scans</div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="border border-border">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-destructive/10">
-                <AlertTriangle className="w-5 h-5 text-destructive" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-destructive">
-                  {recentScans.filter(s => s.is_phishing).length}
-                </div>
-                <div className="text-xs text-muted-foreground">Threats Found</div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="border border-border">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-success/10">
-                <CheckCircle2 className="w-5 h-5 text-success" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-success">
-                  {recentScans.filter(s => !s.is_phishing).length}
-                </div>
-                <div className="text-xs text-muted-foreground">Safe Emails</div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="border border-border">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-warning/10">
-                <Activity className="w-5 h-5 text-warning" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold">
-                  {PHISHING_KEYWORDS.length}
-                </div>
-                <div className="text-xs text-muted-foreground">Keywords Active</div>
-              </div>
-            </CardContent>
-          </Card>
+          {stats.map((s) => {
+            const Icon = s.icon;
+            return (
+              <Card
+                key={s.label}
+                className={`relative overflow-hidden border bg-gradient-to-br ${s.tone}`}
+              >
+                <CardContent className="p-4 flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl bg-background/70 backdrop-blur-sm shadow-sm">
+                    <Icon className={`w-5 h-5 ${s.iconColor}`} />
+                  </div>
+                  <div>
+                    <div className={`text-2xl font-bold ${s.valueClass ?? ""}`}>
+                      {s.value}
+                    </div>
+                    <div className="text-xs text-muted-foreground">{s.label}</div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Scanner Panel */}
           <div className="lg:col-span-2 space-y-6">
-            <Card className="border-2 border-primary/20">
-              <CardHeader>
+            <Card className="border-2 border-primary/20 shadow-lg overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/5 border-b border-border">
                 <div className="flex items-center gap-2">
-                  <Mail className="w-5 h-5 text-primary" />
+                  <div className="p-1.5 rounded-md bg-primary/10">
+                    <Mail className="w-4 h-4 text-primary" />
+                  </div>
                   <CardTitle>Email Scanner</CardTitle>
                 </div>
                 <CardDescription>
-                  Powered by GPT — paste complete email content (headers, subject, body) for in-depth analysis
+                  Choose a detection engine, paste an email, and run the scan to see how it's classified.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-5 pt-6">
+                {/* Mode Tabs */}
+                <Tabs value={mode} onValueChange={(v) => setMode(v as DetectionMode)}>
+                  <TabsList className="grid w-full grid-cols-2 h-auto p-1">
+                    <TabsTrigger value="ai" className="gap-2 py-2.5">
+                      <Brain className="w-4 h-4" />
+                      <span className="font-semibold">AI Analysis</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="keyword" className="gap-2 py-2.5">
+                      <Zap className="w-4 h-4" />
+                      <span className="font-semibold">Keyword Engine</span>
+                    </TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="ai" className="mt-4">
+                    <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-2">
+                      <div className="flex items-center gap-2 text-sm font-semibold text-primary">
+                        <Sparkles className="w-4 h-4" />
+                        Powered by GPT — Contextual Understanding
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Reads the email like a human analyst. Understands tone, intent and social-engineering patterns
+                        even when no obvious keywords are present. Slower, but catches sophisticated and personalized attacks.
+                      </p>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="keyword" className="mt-4">
+                    <div className="rounded-lg border border-warning/30 bg-warning/5 p-4 space-y-2">
+                      <div className="flex items-center gap-2 text-sm font-semibold text-warning">
+                        <Layers className="w-4 h-4" />
+                        Rule-Based — Keyword & Pattern Matching
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Checks the email against {PHISHING_KEYWORDS.length} known phishing keywords plus URL, capitalization
+                        and punctuation rules. Instant and offline-friendly, but misses cleverly worded or novel attacks.
+                      </p>
+                    </div>
+                  </TabsContent>
+                </Tabs>
+
                 <Textarea
                   placeholder={"From: suspicious@email.com\nSubject: Urgent Account Verification Required\n\nDear customer,\nYour account has been compromised. Click here to verify your identity immediately..."}
-                  className="min-h-[220px] font-mono text-sm bg-muted/30"
+                  className="min-h-[220px] font-mono text-sm bg-muted/30 resize-none"
                   value={emailText}
                   onChange={(e) => setEmailText(e.target.value)}
                 />
@@ -312,8 +386,8 @@ const Detector = () => {
                         </>
                       ) : (
                         <>
-                          <Shield className="w-4 h-4" />
-                          Run Scan
+                          {mode === "ai" ? <Brain className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
+                          Run {mode === "ai" ? "AI" : "Keyword"} Scan
                         </>
                       )}
                     </Button>
@@ -322,20 +396,65 @@ const Detector = () => {
               </CardContent>
             </Card>
 
+            {/* Comparison strip — great for expo demos */}
+            <Card className="border bg-gradient-to-br from-muted/40 to-background">
+              <CardContent className="p-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <Layers className="w-4 h-4 text-primary" />
+                  <h3 className="font-semibold text-sm uppercase tracking-wider">
+                    AI vs Keyword — Quick Comparison
+                  </h3>
+                </div>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="rounded-lg border border-primary/20 p-4 bg-background/50">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Brain className="w-4 h-4 text-primary" />
+                      <span className="font-semibold text-sm">AI Analysis</span>
+                    </div>
+                    <ul className="space-y-1.5 text-xs text-muted-foreground">
+                      <li className="flex gap-2"><span className="text-success">+</span> Understands meaning & context</li>
+                      <li className="flex gap-2"><span className="text-success">+</span> Catches new, unseen scams</li>
+                      <li className="flex gap-2"><span className="text-success">+</span> Explains its reasoning</li>
+                      <li className="flex gap-2"><span className="text-destructive">−</span> Slower, needs internet</li>
+                    </ul>
+                  </div>
+                  <div className="rounded-lg border border-warning/20 p-4 bg-background/50">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Zap className="w-4 h-4 text-warning" />
+                      <span className="font-semibold text-sm">Keyword Engine</span>
+                    </div>
+                    <ul className="space-y-1.5 text-xs text-muted-foreground">
+                      <li className="flex gap-2"><span className="text-success">+</span> Instant, no API calls</li>
+                      <li className="flex gap-2"><span className="text-success">+</span> Predictable & transparent</li>
+                      <li className="flex gap-2"><span className="text-destructive">−</span> Misses reworded attacks</li>
+                      <li className="flex gap-2"><span className="text-destructive">−</span> No context awareness</li>
+                    </ul>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Results Panel */}
-            <Card className="border-2">
-              <CardHeader>
+            <Card className="border-2 shadow-lg">
+              <CardHeader className="border-b border-border bg-muted/20">
                 <div className="flex items-center gap-2">
-                  <Eye className="w-5 h-5 text-primary" />
+                  <div className="p-1.5 rounded-md bg-primary/10">
+                    <Eye className="w-4 h-4 text-primary" />
+                  </div>
                   <CardTitle>Scan Results</CardTitle>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-6">
                 {!result ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <Shield className="w-16 h-16 text-muted-foreground/30 mb-4" />
-                    <p className="text-muted-foreground">
-                      Paste an email above and click "Run Scan" to analyze
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <div className="p-4 rounded-full bg-muted/50 mb-4">
+                      <Shield className="w-12 h-12 text-muted-foreground/40" />
+                    </div>
+                    <p className="text-muted-foreground font-medium">
+                      No scan yet
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Paste an email above and run a scan to see results.
                     </p>
                   </div>
                 ) : (
@@ -454,11 +573,13 @@ const Detector = () => {
 
           {/* Recent Scans Sidebar */}
           <div className="space-y-6">
-            <Card className="border-2">
-              <CardHeader>
+            <Card className="border-2 shadow-md">
+              <CardHeader className="border-b border-border bg-muted/20">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Clock className="w-5 h-5 text-primary" />
+                    <div className="p-1.5 rounded-md bg-primary/10">
+                      <Clock className="w-4 h-4 text-primary" />
+                    </div>
                     <CardTitle className="text-lg">Recent Scans</CardTitle>
                   </div>
                   <Button variant="ghost" size="sm" onClick={fetchRecentScans}>
@@ -466,7 +587,7 @@ const Detector = () => {
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-4">
                 {loadingRecents ? (
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -514,10 +635,13 @@ const Detector = () => {
             </Card>
 
             {/* Keywords Reference */}
-            <Card className="border">
+            <Card className="border shadow-sm">
               <CardHeader>
-                <CardTitle className="text-lg">Active Keywords</CardTitle>
-                <CardDescription>Patterns being scanned</CardDescription>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-warning" />
+                  Active Keywords
+                </CardTitle>
+                <CardDescription>Patterns the keyword engine watches for</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-1.5">
