@@ -681,20 +681,19 @@ const Detector = () => {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Zap className="w-4 h-4 text-warning" />
-                  Active Keywords
+                  Active Keyword Dataset
                 </CardTitle>
-                <CardDescription>Patterns the keyword engine watches for</CardDescription>
+                <CardDescription>
+                  {PHISHING_KEYWORDS.length} patterns the keyword engine watches for
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-wrap gap-1.5">
-                  {PHISHING_KEYWORDS.slice(0, 15).map((kw) => (
-                    <Badge key={kw} variant="outline" className="text-xs">
+                <div className="flex flex-wrap gap-1.5 max-h-64 overflow-y-auto pr-1">
+                  {PHISHING_KEYWORDS.map((kw) => (
+                    <Badge key={kw} variant="outline" className="text-xs font-normal">
                       {kw}
                     </Badge>
                   ))}
-                  <Badge variant="secondary" className="text-xs">
-                    +{PHISHING_KEYWORDS.length - 15} more
-                  </Badge>
                 </div>
               </CardContent>
             </Card>
