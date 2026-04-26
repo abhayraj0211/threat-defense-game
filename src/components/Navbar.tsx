@@ -1,8 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
-import { Shield, Moon, Sun, Search, Home, BookOpen, MessageSquare } from "lucide-react";
+import { Moon, Sun, Search, Home, BookOpen, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/ThemeProvider";
 import { cn } from "@/lib/utils";
+import logo from "@/assets/logo.png";
 
 export const Navbar = () => {
   const { theme, toggleTheme } = useTheme();
@@ -19,9 +20,11 @@ export const Navbar = () => {
     <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
       <div className="container max-w-7xl mx-auto flex h-16 items-center justify-between px-4">
         <Link to="/" className="flex items-center gap-2 font-bold text-lg">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent shadow-lg">
-            <Shield className="h-5 w-5 text-primary-foreground" />
-          </div>
+          <img
+            src={logo}
+            alt="Phishing Defense logo"
+            className="h-10 w-10 rounded-lg object-contain shadow-lg"
+          />
           <span className="hidden sm:inline bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             Phishing Defense
           </span>
