@@ -436,6 +436,59 @@ const PostCard = ({
   const [posting, setPosting] = useState(false);
   const { toast } = useToast();
 
+  // Per-post display language (defaults to UI language). Translates content on demand.
+  const [displayLang, setDisplayLang] = useState<Language>(lang);
+  const [translations_, setTranslations_] = useState<
+    Partial<Record<Language, { title: string; content: string }>>
+  >({});
+  const [translating, setTranslating] = useState(false);
+
+  // Whenever the global UI language changes, follow it for this post too.
+  useEffect(() => {
+    setDisplayLang(lang);
+  }, [lang]);
+
+  // When displayLang differs from the original post language and we
+  // haven't fetched a translation yet, fetch it.
+  useEffect(() => {
+    const needsTranslation =
+      displayLang !== (post.language as Language) && !translations_[displayLang];
+    if (!needsTranslation) return;
+
+    let cancelled = false;
+    const run = async () => {
+      setTranslating(true);
+      const { data, error } = await supabase.functions.invoke("translate-post", {
+        body: {
+          title: post.title,
+          content: post.content,
+          targetLanguage: displayLang,
+        },
+      });
+      if (cancelled) return;
+      setTranslating(false);
+      if (error || data?.error) {
+        toast({
+          title: "Translation failed",
+          description: data?.error ?? error?.message ?? "Try again later.",
+          variant: "destructive",
+        });
+        // Fall back to original language so the user sees something
+        setDisplayLang(post.language as Language);
+        return;
+      }
+      setTranslations_((prev) => ({
+        ...prev,
+        [displayLang]: { title: data.title, content: data.content },
+      }));
+    };
+    run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [displayLang, post, translations_, toast]);
+
   const loadComments = async () => {
     setLoadingComments(true);
     const { data } = await supabase
@@ -483,12 +536,18 @@ const PostCard = ({
     { dateStyle: "medium", timeStyle: "short" },
   );
 
+  // Decide what title/content to render
+  const isOriginal = displayLang === (post.language as Language);
+  const displayed = isOriginal
+    ? { title: post.title, content: post.content }
+    : translations_[displayLang] ?? { title: post.title, content: post.content };
+
   return (
     <Card className="border-2 hover:border-primary/30 transition-colors">
       <CardHeader>
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div className="flex-1 min-w-0">
-            <CardTitle className="text-lg break-words">{post.title}</CardTitle>
+            <CardTitle className="text-lg break-words">{displayed.title}</CardTitle>
             <CardDescription className="flex items-center gap-2 mt-1 flex-wrap">
               <span className="font-medium">
                 {t.by} {post.author_name}
@@ -498,19 +557,64 @@ const PostCard = ({
               {timeAgo}
             </CardDescription>
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Badge
               variant="outline"
               className={categoryColors[post.category] ?? categoryColors.general}
             >
               {categoryLabel}
             </Badge>
-            <Badge variant="outline">{post.language === "hi" ? "हिंदी" : "EN"}</Badge>
+            <Badge variant="outline">
+              {post.language === "hi" ? "हिंदी" : "EN"}
+            </Badge>
+            {/* Per-post translation toggle */}
+            <div className="flex items-center gap-1 p-0.5 rounded-md bg-muted text-xs">
+              <button
+                type="button"
+                onClick={() => setDisplayLang("en")}
+                className={`px-2 py-1 rounded transition-colors ${
+                  displayLang === "en"
+                    ? "bg-primary text-primary-foreground font-semibold"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                disabled={translating}
+              >
+                EN
+              </button>
+              <button
+                type="button"
+                onClick={() => setDisplayLang("hi")}
+                className={`px-2 py-1 rounded transition-colors ${
+                  displayLang === "hi"
+                    ? "bg-primary text-primary-foreground font-semibold"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                disabled={translating}
+              >
+                हिं
+              </button>
+            </div>
           </div>
         </div>
       </CardHeader>
       <CardContent>
-        <p className="whitespace-pre-wrap text-sm leading-relaxed">{post.content}</p>
+        {translating ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            {displayLang === "hi" ? "अनुवाद हो रहा है..." : "Translating..."}
+          </div>
+        ) : (
+          <p className="whitespace-pre-wrap text-sm leading-relaxed">
+            {displayed.content}
+          </p>
+        )}
+        {!isOriginal && !translating && (
+          <p className="mt-2 text-[11px] text-muted-foreground italic">
+            {displayLang === "hi"
+              ? "स्वचालित अनुवाद — मूल पोस्ट " + (post.language === "hi" ? "हिंदी" : "अंग्रेज़ी") + " में थी।"
+              : "Auto-translated — original post was in " + (post.language === "hi" ? "Hindi" : "English") + "."}
+          </p>
+        )}
 
         <Button
           variant="ghost"

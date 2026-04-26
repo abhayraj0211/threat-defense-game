@@ -69,46 +69,47 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 215 30% 8%;
-    --foreground: 210 20% 95%;
+    /* Classic pastel dark theme — softer, warmer, easier on the eyes */
+    --background: 220 18% 11%;
+    --foreground: 220 15% 88%;
 
-    --card: 215 28% 12%;
-    --card-foreground: 210 20% 95%;
+    --card: 220 16% 15%;
+    --card-foreground: 220 15% 88%;
 
-    --popover: 215 28% 12%;
-    --popover-foreground: 210 20% 95%;
+    --popover: 220 16% 15%;
+    --popover-foreground: 220 15% 88%;
 
-    --primary: 215 85% 55%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 215 55% 68%;
+    --primary-foreground: 220 25% 12%;
 
-    --secondary: 215 25% 18%;
-    --secondary-foreground: 210 20% 95%;
+    --secondary: 220 14% 20%;
+    --secondary-foreground: 220 15% 88%;
 
-    --muted: 215 25% 18%;
-    --muted-foreground: 215 15% 60%;
+    --muted: 220 14% 20%;
+    --muted-foreground: 220 10% 65%;
 
-    --accent: 210 70% 55%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 200 45% 70%;
+    --accent-foreground: 220 25% 12%;
 
-    --destructive: 0 72% 55%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 55% 70%;
+    --destructive-foreground: 220 25% 12%;
 
-    --success: 142 71% 50%;
-    --success-foreground: 0 0% 100%;
+    --success: 142 40% 65%;
+    --success-foreground: 220 25% 12%;
 
-    --warning: 38 92% 55%;
-    --warning-foreground: 0 0% 100%;
+    --warning: 35 65% 70%;
+    --warning-foreground: 220 25% 12%;
 
-    --border: 215 25% 20%;
-    --input: 215 25% 20%;
-    --ring: 215 85% 55%;
-    
-    --gradient-primary: linear-gradient(135deg, hsl(215 85% 55%), hsl(210 70% 55%));
-    --gradient-danger: linear-gradient(135deg, hsl(0 72% 55%), hsl(15 85% 60%));
-    --gradient-success: linear-gradient(135deg, hsl(142 71% 50%), hsl(158 64% 57%));
-    
-    --shadow-glow: 0 0 50px hsl(215 85% 55% / 0.25);
-    --shadow-card: 0 4px 30px hsl(0 0% 0% / 0.4);
+    --border: 220 14% 22%;
+    --input: 220 14% 22%;
+    --ring: 215 55% 68%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(215 55% 68%), hsl(200 45% 70%));
+    --gradient-danger: linear-gradient(135deg, hsl(0 55% 70%), hsl(15 60% 72%));
+    --gradient-success: linear-gradient(135deg, hsl(142 40% 65%), hsl(158 38% 68%));
+
+    --shadow-glow: 0 0 50px hsl(215 55% 68% / 0.18);
+    --shadow-card: 0 4px 30px hsl(220 25% 4% / 0.5);
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
