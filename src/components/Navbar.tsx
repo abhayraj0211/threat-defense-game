@@ -1,5 +1,5 @@
-import { Link, useLocation } from "react-router-dom";
-import { Moon, Sun, Search, Home, BookOpen, MessageSquare } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Moon, Sun, Search, Home, BookOpen, MessageSquare, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/ThemeProvider";
 import { cn } from "@/lib/utils";
@@ -8,6 +8,7 @@ import logo from "@/assets/logo.png";
 export const Navbar = () => {
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const navItems = [
     { to: "/", label: "Home", icon: Home },
@@ -15,6 +16,17 @@ export const Navbar = () => {
     { to: "/forum", label: "Forum", icon: MessageSquare },
     { to: "/examples", label: "Examples", icon: BookOpen },
   ];
+
+  const goToContact = () => {
+    if (location.pathname !== "/") {
+      navigate("/");
+      setTimeout(() => {
+        document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" });
+      }, 200);
+    } else {
+      document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" });
+    }
+  };
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
