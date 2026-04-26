@@ -14,14 +14,56 @@ import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/Navbar";
 
 const PHISHING_KEYWORDS = [
-  "urgent", "verify", "suspend", "click here", "account", "password",
-  "confirm", "security alert", "unusual activity", "limited time",
-  "act now", "expire", "unauthorized", "validate", "update your information",
-  "dear customer", "dear user", "congratulations", "you have won",
-  "bank account", "social security", "credit card", "login credentials",
-  "reset password", "locked account", "verify identity", "immediate action",
-  "wire transfer", "bitcoin", "gift card", "prize", "inheritance",
+  // Urgency / pressure
+  "urgent", "immediate action", "act now", "act immediately", "expire", "expires today",
+  "limited time", "last chance", "final notice", "deadline", "within 24 hours",
+  "respond now", "do not ignore", "time sensitive", "important update",
+  // Account / credential bait
+  "verify", "verify your account", "verify identity", "validate", "validate your account",
+  "confirm", "confirm your identity", "confirm your account", "update your information",
+  "update your account", "reset password", "password reset", "change password",
+  "login credentials", "your account", "account suspended", "account locked",
+  "locked account", "suspended", "suspend", "deactivated", "reactivate",
+  "unauthorized access", "unauthorized login", "unusual activity", "suspicious activity",
+  "security alert", "security warning", "security notice", "security breach",
+  // Click / link bait
+  "click here", "click below", "click the link", "follow this link",
+  "tap here", "open attachment", "download attachment", "view document",
+  "review and confirm", "sign in here", "log in to continue",
+  // Generic greetings
+  "dear customer", "dear user", "dear client", "dear member", "dear account holder",
+  "valued customer", "to whom it may concern",
+  // Money / prizes / scams
+  "congratulations", "you have won", "you've won", "winner", "lottery",
+  "prize", "claim your prize", "claim now", "free gift", "gift card",
+  "voucher", "cash prize", "jackpot", "inheritance", "beneficiary",
+  "unclaimed funds", "wire transfer", "bank transfer", "money transfer",
+  "transfer fee", "processing fee", "tax clearance", "western union",
+  "bitcoin", "cryptocurrency", "crypto wallet", "investment opportunity",
+  "guaranteed returns", "double your money", "risk free",
+  // Banking / payment
+  "bank account", "credit card", "debit card", "card blocked", "card expired",
+  "kyc update", "kyc pending", "complete kyc", "pan card", "aadhaar",
+  "upi pin", "otp", "share otp", "your otp is", "atm pin",
+  "cvv", "net banking", "internet banking", "ifsc",
+  // Identity / personal info
+  "social security", "ssn", "date of birth", "mother's maiden name",
+  "personal information", "sensitive information", "billing information",
+  // Tech support / malware
+  "your computer is infected", "virus detected", "malware detected",
+  "microsoft support", "apple support", "tech support", "system warning",
+  "drivers outdated", "license expired",
+  // Delivery / logistics scams
+  "package delivery", "package on hold", "shipment", "delivery failed",
+  "customs clearance", "tracking number", "redelivery",
+  // Common impersonations
+  "irs", "income tax refund", "tax refund", "government grant",
+  "police complaint", "court notice", "legal action",
+  // Social engineering tells
+  "do not share this", "keep this confidential", "between us only",
+  "i need a favor", "are you available",
 ];
+
 
 type DetectionMode = "ai" | "keyword";
 
