@@ -547,7 +547,7 @@ const PostCard = ({
       <CardHeader>
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div className="flex-1 min-w-0">
-            <CardTitle className="text-lg break-words">{post.title}</CardTitle>
+            <CardTitle className="text-lg break-words">{displayed.title}</CardTitle>
             <CardDescription className="flex items-center gap-2 mt-1 flex-wrap">
               <span className="font-medium">
                 {t.by} {post.author_name}
@@ -557,19 +557,64 @@ const PostCard = ({
               {timeAgo}
             </CardDescription>
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Badge
               variant="outline"
               className={categoryColors[post.category] ?? categoryColors.general}
             >
               {categoryLabel}
             </Badge>
-            <Badge variant="outline">{post.language === "hi" ? "हिंदी" : "EN"}</Badge>
+            <Badge variant="outline">
+              {post.language === "hi" ? "हिंदी" : "EN"}
+            </Badge>
+            {/* Per-post translation toggle */}
+            <div className="flex items-center gap-1 p-0.5 rounded-md bg-muted text-xs">
+              <button
+                type="button"
+                onClick={() => setDisplayLang("en")}
+                className={`px-2 py-1 rounded transition-colors ${
+                  displayLang === "en"
+                    ? "bg-primary text-primary-foreground font-semibold"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                disabled={translating}
+              >
+                EN
+              </button>
+              <button
+                type="button"
+                onClick={() => setDisplayLang("hi")}
+                className={`px-2 py-1 rounded transition-colors ${
+                  displayLang === "hi"
+                    ? "bg-primary text-primary-foreground font-semibold"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                disabled={translating}
+              >
+                हिं
+              </button>
+            </div>
           </div>
         </div>
       </CardHeader>
       <CardContent>
-        <p className="whitespace-pre-wrap text-sm leading-relaxed">{post.content}</p>
+        {translating ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            {displayLang === "hi" ? "अनुवाद हो रहा है..." : "Translating..."}
+          </div>
+        ) : (
+          <p className="whitespace-pre-wrap text-sm leading-relaxed">
+            {displayed.content}
+          </p>
+        )}
+        {!isOriginal && !translating && (
+          <p className="mt-2 text-[11px] text-muted-foreground italic">
+            {displayLang === "hi"
+              ? "स्वचालित अनुवाद — मूल पोस्ट " + (post.language === "hi" ? "हिंदी" : "अंग्रेज़ी") + " में थी।"
+              : "Auto-translated — original post was in " + (post.language === "hi" ? "Hindi" : "English") + "."}
+          </p>
+        )}
 
         <Button
           variant="ghost"
