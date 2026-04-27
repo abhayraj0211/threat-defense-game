@@ -39,6 +39,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 type Language = "en" | "hi";
 
@@ -174,6 +175,8 @@ const Forum = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [filter, setFilter] = useState<"all" | "en" | "hi">("all");
 
+  const { profile, user } = useAuth();
+
   const [form, setForm] = useState({
     author_name: "",
     title: "",
@@ -188,6 +191,13 @@ const Forum = () => {
   useEffect(() => {
     fetchPosts();
   }, []);
+
+  // Auto-fill author name when user logs in
+  useEffect(() => {
+    if (profile?.display_name) {
+      setForm((f) => ({ ...f, author_name: profile.display_name }));
+    }
+  }, [profile?.display_name]);
 
   const fetchPosts = async () => {
     setLoading(true);
@@ -277,7 +287,13 @@ const Forum = () => {
                         onChange={(e) => setForm({ ...form, author_name: e.target.value })}
                         maxLength={60}
                         placeholder="Anonymous OK"
+                        disabled={!!user}
                       />
+                      {user && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Posting as <span className="font-semibold">{profile?.display_name}</span>
+                        </p>
+                      )}
                     </div>
                     <div>
                       <label className="text-sm font-medium mb-1 block">{t.title}</label>
