@@ -514,10 +514,10 @@ const Detector = () => {
                 <div className="flex items-center gap-2 mb-4">
                   <Layers className="w-4 h-4 text-primary" />
                   <h3 className="font-semibold text-sm uppercase tracking-wider">
-                    AI vs Keyword — Quick Comparison
+                    AI vs Naive Bayes vs Keyword — Quick Comparison
                   </h3>
                 </div>
-                <div className="grid md:grid-cols-2 gap-4">
+                <div className="grid md:grid-cols-3 gap-4">
                   <div className="rounded-lg border border-primary/20 p-4 bg-background/50">
                     <div className="flex items-center gap-2 mb-2">
                       <Brain className="w-4 h-4 text-primary" />
@@ -528,6 +528,20 @@ const Detector = () => {
                       <li className="flex gap-2"><span className="text-success">+</span> Catches new, unseen scams</li>
                       <li className="flex gap-2"><span className="text-success">+</span> Explains its reasoning</li>
                       <li className="flex gap-2"><span className="text-destructive">−</span> Slower, needs internet</li>
+                      <li className="flex gap-2"><span className="text-destructive">−</span> Costs API credits</li>
+                    </ul>
+                  </div>
+                  <div className="rounded-lg border border-accent/30 p-4 bg-background/50">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Calculator className="w-4 h-4 text-accent" />
+                      <span className="font-semibold text-sm">Naive Bayes</span>
+                    </div>
+                    <ul className="space-y-1.5 text-xs text-muted-foreground">
+                      <li className="flex gap-2"><span className="text-success">+</span> Learns from labeled data</li>
+                      <li className="flex gap-2"><span className="text-success">+</span> Probabilistic confidence</li>
+                      <li className="flex gap-2"><span className="text-success">+</span> Fast & runs offline</li>
+                      <li className="flex gap-2"><span className="text-destructive">−</span> Limited to training set</li>
+                      <li className="flex gap-2"><span className="text-destructive">−</span> Bag-of-words: no order</li>
                     </ul>
                   </div>
                   <div className="rounded-lg border border-warning/20 p-4 bg-background/50">
@@ -538,6 +552,7 @@ const Detector = () => {
                     <ul className="space-y-1.5 text-xs text-muted-foreground">
                       <li className="flex gap-2"><span className="text-success">+</span> Instant, no API calls</li>
                       <li className="flex gap-2"><span className="text-success">+</span> Predictable & transparent</li>
+                      <li className="flex gap-2"><span className="text-success">+</span> Easy to extend</li>
                       <li className="flex gap-2"><span className="text-destructive">−</span> Misses reworded attacks</li>
                       <li className="flex gap-2"><span className="text-destructive">−</span> No context awareness</li>
                     </ul>
