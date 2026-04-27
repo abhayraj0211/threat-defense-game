@@ -629,6 +629,11 @@ const Detector = () => {
                             <Sparkles className="w-3 h-3 text-primary" />
                             AI Analysis (GPT)
                           </>
+                        ) : result.source === "bayes" ? (
+                          <>
+                            <Calculator className="w-3 h-3 text-accent" />
+                            Naive Bayes ML
+                          </>
                         ) : (
                           <>
                             <Search className="w-3 h-3" />
