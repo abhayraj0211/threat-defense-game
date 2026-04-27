@@ -445,12 +445,23 @@ const PostCard = ({
   t: typeof translations["en"];
   lang: Language;
 }) => {
+  const { profile, user } = useAuth();
   const [expanded, setExpanded] = useState(false);
   const [comments, setComments] = useState<ForumComment[]>([]);
   const [loadingComments, setLoadingComments] = useState(false);
-  const [commentForm, setCommentForm] = useState({ author_name: "", content: "" });
+  const [commentForm, setCommentForm] = useState({
+    author_name: profile?.display_name ?? "",
+    content: "",
+  });
   const [posting, setPosting] = useState(false);
   const { toast } = useToast();
+
+  // Auto-fill author when user logs in
+  useEffect(() => {
+    if (profile?.display_name) {
+      setCommentForm((c) => ({ ...c, author_name: profile.display_name }));
+    }
+  }, [profile?.display_name]);
 
   // Per-post display language (defaults to UI language). Translates content on demand.
   const [displayLang, setDisplayLang] = useState<Language>(lang);
