@@ -7,11 +7,17 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   AlertTriangle, CheckCircle2, Shield, Loader2,
   Clock, Mail, Search, Activity, Database, Eye, Sparkles,
-  Brain, Zap, ScanLine, Layers,
+  Brain, Zap, ScanLine, Layers, Calculator,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/Navbar";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  predictNaiveBayes,
+  NB_TRAINING_SIZE,
+  NB_VOCAB_SIZE,
+} from "@/lib/naiveBayes";
 
 const PHISHING_KEYWORDS = [
   // Urgency / pressure
@@ -65,7 +71,7 @@ const PHISHING_KEYWORDS = [
 ];
 
 
-type DetectionMode = "ai" | "keyword";
+type DetectionMode = "ai" | "keyword" | "bayes";
 
 type ScanResult = {
   isPhishing: boolean;
@@ -74,7 +80,7 @@ type ScanResult = {
   recommendation: string;
   riskLevel?: string;
   summary?: string;
-  source: "ai" | "keyword";
+  source: "ai" | "keyword" | "bayes";
 };
 
 type RecentScan = {
@@ -94,6 +100,7 @@ const Detector = () => {
   const [recentScans, setRecentScans] = useState<RecentScan[]>([]);
   const [loadingRecents, setLoadingRecents] = useState(true);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
     fetchRecentScans();
@@ -195,6 +202,37 @@ const Detector = () => {
     };
   };
 
+  const runBayesScan = (): ScanResult => {
+    const pred = predictNaiveBayes(emailText);
+    const indicators: string[] = [];
+    indicators.push(
+      `Trained on ${pred.totalDocs} labeled emails (${NB_VOCAB_SIZE} vocab words)`,
+    );
+    if (pred.topPhishingTokens.length > 0) {
+      indicators.push(
+        `Tokens pushing toward PHISHING: ${pred.topPhishingTokens.join(", ")}`,
+      );
+    }
+    if (pred.topSafeTokens.length > 0) {
+      indicators.push(
+        `Tokens pushing toward SAFE: ${pred.topSafeTokens.join(", ")}`,
+      );
+    }
+    indicators.push(
+      `Posterior probability: ${pred.confidence}% ${pred.isPhishing ? "phishing" : "safe"}`,
+    );
+
+    return {
+      isPhishing: pred.isPhishing,
+      confidence: pred.confidence,
+      indicators,
+      recommendation: pred.isPhishing
+        ? "📊 Naive Bayes predicts PHISHING based on word probabilities learned from the training corpus. Treat with caution."
+        : "📊 Naive Bayes predicts SAFE — observed wording resembles legitimate emails in the training set.",
+      source: "bayes",
+    };
+  };
+
   const analyzeEmail = async () => {
     if (!emailText.trim()) {
       toast({
@@ -213,8 +251,10 @@ const Detector = () => {
     try {
       if (mode === "ai") {
         scanResult = await runAIScan();
+      } else if (mode === "bayes") {
+        await new Promise((r) => setTimeout(r, 350));
+        scanResult = runBayesScan();
       } else {
-        // Brief artificial delay so the UX feels intentional
         await new Promise((r) => setTimeout(r, 400));
         scanResult = runKeywordScan();
       }
@@ -236,12 +276,20 @@ const Detector = () => {
       confidence: scanResult.confidence,
       indicators: scanResult.indicators,
       recommendation: scanResult.recommendation,
+      user_id: user?.id ?? null,
     });
 
     fetchRecentScans();
 
+    const sourceLabel =
+      scanResult.source === "ai"
+        ? "AI"
+        : scanResult.source === "bayes"
+          ? "Naive Bayes"
+          : "Keyword";
+
     toast({
-      title: `Scan Complete (${scanResult.source === "ai" ? "AI" : "Keyword"})`,
+      title: `Scan Complete (${sourceLabel})`,
       description: `Threat level: ${scanResult.isPhishing ? "HIGH" : "LOW"} (${scanResult.confidence}% confidence)`,
     });
 
@@ -303,7 +351,7 @@ const Detector = () => {
                 </span>
               </h1>
               <p className="text-muted-foreground max-w-xl">
-                Compare AI-powered analysis with classic keyword detection. Paste any suspicious email to see how each engine responds.
+                Compare three engines side-by-side: AI, a Naive Bayes ML classifier, and a classic keyword scanner. Paste any suspicious email to see how each responds.
               </p>
             </div>
             <Badge variant="outline" className="gap-1.5 px-3 py-1.5 backdrop-blur-sm">
@@ -358,14 +406,18 @@ const Detector = () => {
               <CardContent className="space-y-5 pt-6">
                 {/* Mode Tabs */}
                 <Tabs value={mode} onValueChange={(v) => setMode(v as DetectionMode)}>
-                  <TabsList className="grid w-full grid-cols-2 h-auto p-1">
+                  <TabsList className="grid w-full grid-cols-3 h-auto p-1">
                     <TabsTrigger value="ai" className="gap-2 py-2.5">
                       <Brain className="w-4 h-4" />
-                      <span className="font-semibold">AI Analysis</span>
+                      <span className="font-semibold">AI</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="bayes" className="gap-2 py-2.5">
+                      <Calculator className="w-4 h-4" />
+                      <span className="font-semibold">Naive Bayes</span>
                     </TabsTrigger>
                     <TabsTrigger value="keyword" className="gap-2 py-2.5">
                       <Zap className="w-4 h-4" />
-                      <span className="font-semibold">Keyword Engine</span>
+                      <span className="font-semibold">Keyword</span>
                     </TabsTrigger>
                   </TabsList>
 
@@ -378,6 +430,22 @@ const Detector = () => {
                       <p className="text-xs text-muted-foreground leading-relaxed">
                         Reads the email like a human analyst. Understands tone, intent and social-engineering patterns
                         even when no obvious keywords are present. Slower, but catches sophisticated and personalized attacks.
+                      </p>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="bayes" className="mt-4">
+                    <div className="rounded-lg border border-accent/30 bg-accent/5 p-4 space-y-2">
+                      <div className="flex items-center gap-2 text-sm font-semibold text-accent">
+                        <Calculator className="w-4 h-4" />
+                        Multinomial Naive Bayes — Probabilistic ML
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        A classic probabilistic classifier trained on{" "}
+                        <span className="font-semibold">{NB_TRAINING_SIZE} labeled emails</span>{" "}
+                        ({NB_VOCAB_SIZE} vocab words). Computes the posterior probability that
+                        the email is phishing using Laplace-smoothed word likelihoods. Runs entirely
+                        in your browser — no API calls.
                       </p>
                     </div>
                   </TabsContent>
@@ -428,8 +496,10 @@ const Detector = () => {
                         </>
                       ) : (
                         <>
-                          {mode === "ai" ? <Brain className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
-                          Run {mode === "ai" ? "AI" : "Keyword"} Scan
+                          {mode === "ai" ? <Brain className="w-4 h-4" /> :
+                            mode === "bayes" ? <Calculator className="w-4 h-4" /> :
+                              <Zap className="w-4 h-4" />}
+                          Run {mode === "ai" ? "AI" : mode === "bayes" ? "Naive Bayes" : "Keyword"} Scan
                         </>
                       )}
                     </Button>
@@ -444,10 +514,10 @@ const Detector = () => {
                 <div className="flex items-center gap-2 mb-4">
                   <Layers className="w-4 h-4 text-primary" />
                   <h3 className="font-semibold text-sm uppercase tracking-wider">
-                    AI vs Keyword — Quick Comparison
+                    AI vs Naive Bayes vs Keyword — Quick Comparison
                   </h3>
                 </div>
-                <div className="grid md:grid-cols-2 gap-4">
+                <div className="grid md:grid-cols-3 gap-4">
                   <div className="rounded-lg border border-primary/20 p-4 bg-background/50">
                     <div className="flex items-center gap-2 mb-2">
                       <Brain className="w-4 h-4 text-primary" />
@@ -458,6 +528,20 @@ const Detector = () => {
                       <li className="flex gap-2"><span className="text-success">+</span> Catches new, unseen scams</li>
                       <li className="flex gap-2"><span className="text-success">+</span> Explains its reasoning</li>
                       <li className="flex gap-2"><span className="text-destructive">−</span> Slower, needs internet</li>
+                      <li className="flex gap-2"><span className="text-destructive">−</span> Costs API credits</li>
+                    </ul>
+                  </div>
+                  <div className="rounded-lg border border-accent/30 p-4 bg-background/50">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Calculator className="w-4 h-4 text-accent" />
+                      <span className="font-semibold text-sm">Naive Bayes</span>
+                    </div>
+                    <ul className="space-y-1.5 text-xs text-muted-foreground">
+                      <li className="flex gap-2"><span className="text-success">+</span> Learns from labeled data</li>
+                      <li className="flex gap-2"><span className="text-success">+</span> Probabilistic confidence</li>
+                      <li className="flex gap-2"><span className="text-success">+</span> Fast & runs offline</li>
+                      <li className="flex gap-2"><span className="text-destructive">−</span> Limited to training set</li>
+                      <li className="flex gap-2"><span className="text-destructive">−</span> Bag-of-words: no order</li>
                     </ul>
                   </div>
                   <div className="rounded-lg border border-warning/20 p-4 bg-background/50">
@@ -468,6 +552,7 @@ const Detector = () => {
                     <ul className="space-y-1.5 text-xs text-muted-foreground">
                       <li className="flex gap-2"><span className="text-success">+</span> Instant, no API calls</li>
                       <li className="flex gap-2"><span className="text-success">+</span> Predictable & transparent</li>
+                      <li className="flex gap-2"><span className="text-success">+</span> Easy to extend</li>
                       <li className="flex gap-2"><span className="text-destructive">−</span> Misses reworded attacks</li>
                       <li className="flex gap-2"><span className="text-destructive">−</span> No context awareness</li>
                     </ul>
@@ -543,6 +628,11 @@ const Detector = () => {
                           <>
                             <Sparkles className="w-3 h-3 text-primary" />
                             AI Analysis (GPT)
+                          </>
+                        ) : result.source === "bayes" ? (
+                          <>
+                            <Calculator className="w-3 h-3 text-accent" />
+                            Naive Bayes ML
                           </>
                         ) : (
                           <>

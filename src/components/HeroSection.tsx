@@ -65,7 +65,7 @@ export const HeroSection = () => {
             <div className="text-sm text-muted-foreground">Of breaches involve phishing</div>
           </div>
           <div className="p-6 rounded-lg bg-card/50 backdrop-blur border border-border">
-            <div className="text-4xl font-bold text-success mb-2">99.9%</div>
+            <div className="text-4xl font-bold text-success mb-2">90.9%</div>
             <div className="text-sm text-muted-foreground">Detection accuracy rate</div>
           </div>
         </div>
