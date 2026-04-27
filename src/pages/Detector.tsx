@@ -7,11 +7,17 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   AlertTriangle, CheckCircle2, Shield, Loader2,
   Clock, Mail, Search, Activity, Database, Eye, Sparkles,
-  Brain, Zap, ScanLine, Layers,
+  Brain, Zap, ScanLine, Layers, Calculator,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/Navbar";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  predictNaiveBayes,
+  NB_TRAINING_SIZE,
+  NB_VOCAB_SIZE,
+} from "@/lib/naiveBayes";
 
 const PHISHING_KEYWORDS = [
   // Urgency / pressure
@@ -65,7 +71,7 @@ const PHISHING_KEYWORDS = [
 ];
 
 
-type DetectionMode = "ai" | "keyword";
+type DetectionMode = "ai" | "keyword" | "bayes";
 
 type ScanResult = {
   isPhishing: boolean;
@@ -74,7 +80,7 @@ type ScanResult = {
   recommendation: string;
   riskLevel?: string;
   summary?: string;
-  source: "ai" | "keyword";
+  source: "ai" | "keyword" | "bayes";
 };
 
 type RecentScan = {
@@ -94,6 +100,7 @@ const Detector = () => {
   const [recentScans, setRecentScans] = useState<RecentScan[]>([]);
   const [loadingRecents, setLoadingRecents] = useState(true);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
     fetchRecentScans();
