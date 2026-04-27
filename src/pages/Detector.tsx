@@ -351,7 +351,7 @@ const Detector = () => {
                 </span>
               </h1>
               <p className="text-muted-foreground max-w-xl">
-                Compare AI-powered analysis with classic keyword detection. Paste any suspicious email to see how each engine responds.
+                Compare three engines side-by-side: AI, a Naive Bayes ML classifier, and a classic keyword scanner. Paste any suspicious email to see how each responds.
               </p>
             </div>
             <Badge variant="outline" className="gap-1.5 px-3 py-1.5 backdrop-blur-sm">
