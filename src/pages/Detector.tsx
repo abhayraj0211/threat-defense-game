@@ -406,14 +406,18 @@ const Detector = () => {
               <CardContent className="space-y-5 pt-6">
                 {/* Mode Tabs */}
                 <Tabs value={mode} onValueChange={(v) => setMode(v as DetectionMode)}>
-                  <TabsList className="grid w-full grid-cols-2 h-auto p-1">
+                  <TabsList className="grid w-full grid-cols-3 h-auto p-1">
                     <TabsTrigger value="ai" className="gap-2 py-2.5">
                       <Brain className="w-4 h-4" />
-                      <span className="font-semibold">AI Analysis</span>
+                      <span className="font-semibold">AI</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="bayes" className="gap-2 py-2.5">
+                      <Calculator className="w-4 h-4" />
+                      <span className="font-semibold">Naive Bayes</span>
                     </TabsTrigger>
                     <TabsTrigger value="keyword" className="gap-2 py-2.5">
                       <Zap className="w-4 h-4" />
-                      <span className="font-semibold">Keyword Engine</span>
+                      <span className="font-semibold">Keyword</span>
                     </TabsTrigger>
                   </TabsList>
 
@@ -426,6 +430,22 @@ const Detector = () => {
                       <p className="text-xs text-muted-foreground leading-relaxed">
                         Reads the email like a human analyst. Understands tone, intent and social-engineering patterns
                         even when no obvious keywords are present. Slower, but catches sophisticated and personalized attacks.
+                      </p>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="bayes" className="mt-4">
+                    <div className="rounded-lg border border-accent/30 bg-accent/5 p-4 space-y-2">
+                      <div className="flex items-center gap-2 text-sm font-semibold text-accent">
+                        <Calculator className="w-4 h-4" />
+                        Multinomial Naive Bayes — Probabilistic ML
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        A classic probabilistic classifier trained on{" "}
+                        <span className="font-semibold">{NB_TRAINING_SIZE} labeled emails</span>{" "}
+                        ({NB_VOCAB_SIZE} vocab words). Computes the posterior probability that
+                        the email is phishing using Laplace-smoothed word likelihoods. Runs entirely
+                        in your browser — no API calls.
                       </p>
                     </div>
                   </TabsContent>
