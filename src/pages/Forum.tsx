@@ -689,6 +689,7 @@ const PostCard = ({
                   setCommentForm({ ...commentForm, author_name: e.target.value })
                 }
                 maxLength={60}
+                disabled={!!user}
               />
               <Textarea
                 placeholder={t.commentPlaceholder}
