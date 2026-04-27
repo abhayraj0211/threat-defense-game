@@ -496,8 +496,10 @@ const Detector = () => {
                         </>
                       ) : (
                         <>
-                          {mode === "ai" ? <Brain className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
-                          Run {mode === "ai" ? "AI" : "Keyword"} Scan
+                          {mode === "ai" ? <Brain className="w-4 h-4" /> :
+                            mode === "bayes" ? <Calculator className="w-4 h-4" /> :
+                              <Zap className="w-4 h-4" />}
+                          Run {mode === "ai" ? "AI" : mode === "bayes" ? "Naive Bayes" : "Keyword"} Scan
                         </>
                       )}
                     </Button>
