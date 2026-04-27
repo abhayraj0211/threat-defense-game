@@ -202,6 +202,37 @@ const Detector = () => {
     };
   };
 
+  const runBayesScan = (): ScanResult => {
+    const pred = predictNaiveBayes(emailText);
+    const indicators: string[] = [];
+    indicators.push(
+      `Trained on ${pred.totalDocs} labeled emails (${NB_VOCAB_SIZE} vocab words)`,
+    );
+    if (pred.topPhishingTokens.length > 0) {
+      indicators.push(
+        `Tokens pushing toward PHISHING: ${pred.topPhishingTokens.join(", ")}`,
+      );
+    }
+    if (pred.topSafeTokens.length > 0) {
+      indicators.push(
+        `Tokens pushing toward SAFE: ${pred.topSafeTokens.join(", ")}`,
+      );
+    }
+    indicators.push(
+      `Posterior probability: ${pred.confidence}% ${pred.isPhishing ? "phishing" : "safe"}`,
+    );
+
+    return {
+      isPhishing: pred.isPhishing,
+      confidence: pred.confidence,
+      indicators,
+      recommendation: pred.isPhishing
+        ? "📊 Naive Bayes predicts PHISHING based on word probabilities learned from the training corpus. Treat with caution."
+        : "📊 Naive Bayes predicts SAFE — observed wording resembles legitimate emails in the training set.",
+      source: "bayes",
+    };
+  };
+
   const analyzeEmail = async () => {
     if (!emailText.trim()) {
       toast({
@@ -220,8 +251,10 @@ const Detector = () => {
     try {
       if (mode === "ai") {
         scanResult = await runAIScan();
+      } else if (mode === "bayes") {
+        await new Promise((r) => setTimeout(r, 350));
+        scanResult = runBayesScan();
       } else {
-        // Brief artificial delay so the UX feels intentional
         await new Promise((r) => setTimeout(r, 400));
         scanResult = runKeywordScan();
       }
@@ -243,12 +276,20 @@ const Detector = () => {
       confidence: scanResult.confidence,
       indicators: scanResult.indicators,
       recommendation: scanResult.recommendation,
+      user_id: user?.id ?? null,
     });
 
     fetchRecentScans();
 
+    const sourceLabel =
+      scanResult.source === "ai"
+        ? "AI"
+        : scanResult.source === "bayes"
+          ? "Naive Bayes"
+          : "Keyword";
+
     toast({
-      title: `Scan Complete (${scanResult.source === "ai" ? "AI" : "Keyword"})`,
+      title: `Scan Complete (${sourceLabel})`,
       description: `Threat level: ${scanResult.isPhishing ? "HIGH" : "LOW"} (${scanResult.confidence}% confidence)`,
     });
 
